@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Trends Explorer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <h1>Google Trends  -- Keyword and its Related Word Trend Ranking</h1>
+    <nobr><label for="keyword">Enter KeyWord：</label> <input type="text" id="keyword" placeholder="e.g. Taylor Swift">
+        <label for="keyword">Select Reigion:</label> <input type="text" id="reigion" placeholder="e.g. US">
+        <button onclick="sendKeyword()">Search</button></nobr>
+    <script>
+        function sendKeyword() {
+            const keyword = document.getElementById('keyword').value;
+            const reigion = document.getElementById('reigion').value;
+
+            fetch('/trend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ keyword: keyword, reigion:reigion})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    if (data.refresh) {
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);}
+                    alert(`Success!\nGoing to Refresh the page`);
+                }
+            })
+            .catch(error => {
+                console.error('Error: ', error);
+            });
+        }
+    </script>
+    <svg id="chart" width="800" height="350"></svg>
+    <div id="controls">
+        <button id="toggle-btn">
+          <img id="toggle-img" src="static/play.png" alt="Play">
+        </button>
+        <div id="progress-bar">
+          <div id="progress"></div>
+        </div>
+        <span id="seq-display">Seq: 0</span>
+    </div>
+
+    <script>
+        const margin = { top: 50, right: 50, bottom: 50, left: 300 };
+        const width = 1000 - margin.left - margin.right;
+        const height = 550 - margin.top - margin.bottom;
+    
+        const svg = d3.select("#chart")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+    
+        const toggleImg = d3.select("#toggle-img");
+        const progressBar = d3.select("#progress-bar");
+        const progressIndicator = d3.select("#progress");
+        const toggleButton = d3.select("#toggle-btn");
+        const seqDisplay = d3.select("#seq-display");
+    
+        let seqIndex = 0;
+        let interval;
+        let isPlaying = false;
+    
+        d3.csv("static/trend_combined.csv").then(data => {
+          const keys = data.columns.slice(1);
+    
+          const processedData = data.map(d => {
+            const values = keys.map(key => ({
+                key: key,
+                value: +d[key]
+            }));
+            return {
+              date: d.date,
+              values: values.sort((a, b) => b.value - a.value)
+            };
+          });
+          console.log("Processed Data Length:", processedData.length);
+
+          const maxGlobalValue = d3.max(processedData.flatMap(d => d.values.map(v => v.value)));
+    
+          const xScale = d3.scaleLinear().domain([0, maxGlobalValue]).range([0, width]);
+          const yScale = d3.scaleBand().range([0, height]).padding(0.1);
+    
+          function updateChart(seqIndex) {
+            const data = processedData[seqIndex].values;
+    
+            yScale.domain(data.map(d => d.key));
+    
+            const bars = svg.selectAll(".bar")
+              .data(data, d => d.key);
+    
+            bars.enter()
+              .append("rect")
+              .attr("class", "bar")
+              .attr("x", 0)
+              .attr("y", d => yScale(d.key))
+              .attr("width", 0)
+              .attr("height", yScale.bandwidth())
+              .merge(bars)
+              .transition()
+              .duration(500)
+              .attr("width", d => xScale(d.value))
+              .attr("y", d => yScale(d.key));
+    
+            bars.exit().remove();
+    
+            const labels = svg.selectAll(".label")
+              .data(data, d => d.key);
+    
+            labels.enter()
+              .append("text")
+              .attr("class", "label")
+              .attr("x", 0)
+              .attr("y", d => yScale(d.key) + yScale.bandwidth() / 2)
+              .attr("dy", "0.35em")
+              .merge(labels)
+              .transition()
+              .duration(500)
+              .attr("x", d => xScale(d.value) + 5)
+              .attr("y", d => yScale(d.key) + yScale.bandwidth() / 2)
+              .text(d => d.value);
+    
+            labels.exit().remove();
+            const categoryLabels = svg.selectAll(".category-label")
+                .data(data, d => d.key);
+
+            const categoryLabelsEnter = categoryLabels.enter()
+                .append("text")
+                .attr("class", "category-label")
+                .attr("x", -margin.left + 10)
+                .attr("y", d => yScale(d.key))
+                .attr("dy", "0.35em");
+
+                categoryLabelsEnter
+                .selectAll("tspan")
+                .data(d => d.key.split(/\n/))
+                .enter()
+                .append("tspan")
+                .attr("x", -margin.left + 10)
+                .attr("dy", (d, i) => i === 0 ? "0em" : "1.2em")
+                .text(d => d);
+
+                categoryLabelsEnter
+                .merge(categoryLabels)
+                .transition()
+                .duration(500)
+                .attr("x", -margin.left + 10)
+                .attr("y", d => yScale(d.key) + yScale.bandwidth() / 2);
+
+                categoryLabels.exit().remove();
+
+          }
+    
+          function updateProgress(seqIndex) {
+            const progress = ((seqIndex + 1) / processedData.length) * 100;
+            progressIndicator.node().offsetWidth;
+            progressIndicator.style("width", progress + "%");
+            seqDisplay.text(`Date: ${processedData[seqIndex].date}`);
+          }
+    
+          function play() {
+            isPlaying = true;
+            toggleImg.attr("src", "static/pause.png");
+            if (seqIndex >= processedData.length) seqIndex = 0;
+            interval = setInterval(() => {
+              if (seqIndex >= processedData.length) {
+                pause();
+              } else {
+                updateChart(seqIndex);
+                updateProgress(seqIndex);
+                seqIndex++;
+              }
+            }, 1500);
+          }
+    
+          function pause() {
+            isPlaying = false;
+            toggleImg.attr("src", "static/play.png").attr("alt", "Play");
+            clearInterval(interval);
+        }
+          toggleButton.on("click", () => {
+            if (isPlaying) {
+              pause();
+            } else {
+              play();
+            }
+          });
+    
+          progressBar.on("click", function(event) {
+            const rect = progressBar.node().getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const newProgress = clickX / rect.width;
+            seqIndex = Math.floor(newProgress * processedData.length);
+            updateChart(seqIndex);
+            updateProgress(seqIndex);
+          });
+
+            setTimeout(() => {
+                play();
+            }, 100);
+
+          updateChart(seqIndex);
+          updateProgress(seqIndex);
+        });
+
+      </script>
+</body>
+</html>

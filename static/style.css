@@ -1,0 +1,116 @@
+body {
+  font-family: "Comic Sans MS", sans-serif;
+  font-weight: bold;
+  height: auto; /* 允許高度根據內容增長 */
+  min-height: 100vh; /* 確保最小高度為視口高度 */
+  margin: 0;
+  background: linear-gradient(to top right, #E8F4FF, #F2E6E6);
+  background-size: cover; /* 覆蓋整個背景 */
+  background-repeat: no-repeat; /* 不重複背景 */
+  color: #30566E;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  white-space: pre;
+}
+.h1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  margin-bottom: 0;
+  size: 14px;
+}
+.bar-label {
+  font-size: 14px;
+  fill: white;
+  text-anchor: end;
+}
+.category-label {
+  font-size: 14px;
+  fill: black;
+  text-anchor: start;
+}
+#progress-bar {
+  width: 600px;
+  height: 20px;
+  background-color: #e0e0e0; /* 背景色 */
+  border-radius: 10px; /* 圆角效果 */
+  overflow: hidden; /* 确保内容不会溢出 */
+  position: relative; /* 相对定位，便于子元素定位 */
+  }
+
+  #progress {
+      width: 0%; /* 初始宽度 */
+      height: 100%; /* 占满父容器高度 */
+      background-color: #67859e; /* 进度条颜色 */
+      border-radius: 10px 0 0 10px; /* 左侧圆角效果 */
+      position: absolute; /* 子容器设置绝对定位 */
+      top: 0; /* 从父容器顶部开始 */
+      left: 0; /* 从父容器左侧开始 */
+      transition: width 0.5s ease; /* 平滑动画 */
+  }
+
+#controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+#seq-display {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+.label {
+  font-size: 12px;
+  fill: black;
+}
+#toggle-img {
+  width: 24px;
+  height: 24px;
+}
+svg {
+  margin-top: 8px;
+  border: 2px solid #788D85; /* 可選：方便看到邊界 */
+}
+.bar {
+fill: #797d62;
+}
+
+.bar:nth-child(1) {
+fill: #66130d;
+}
+
+.bar:nth-child(2) {
+fill: #6d3f3c;
+}
+
+.bar:nth-child(3) {
+fill: #90605e;
+}
+.bar:nth-child(4) {
+fill: #597380;
+}
+
+.bar:nth-child(5) {
+fill: #3e5168;
+}
+
+.bar:nth-child(6) {
+fill: #222e50;
+}
+br{
+  line-height: 0.1px;
+} 
